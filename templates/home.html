@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block title %}Home | CareerVerse{% endblock %}
+
+{% block content %}
+<div class="logo-header-centered">
+    <div class="hero-logo-wrapper">
+        <img src="{{ url_for('static', filename='images/realistic_logo.png') }}" alt="CareerVerse" class="centered-hero-logo floating">
+    </div>
+    <p class="page-subtitle">upload or enter the academic records to get career guidance</p>
+</div>
+
+<div class="home-container">
+    <!-- Input Method Toggle -->
+    <div class="method-toggle" id="method-toggle">
+        <button class="toggle-btn active" id="btn-upload" onclick="switchMethod('upload')">
+            <span class="toggle-icon">📄</span> Upload Marksheet
+        </button>
+        <button class="toggle-btn" id="btn-manual" onclick="switchMethod('manual')">
+            <span class="toggle-icon">✏️</span> Enter Manually
+        </button>
+    </div>
+
+    <!-- ═══════ OCR UPLOAD SECTION ═══════ -->
+    <div class="input-section" id="section-upload">
+        <div class="glass-card upload-card">
+            <h2>Upload Marksheet Image</h2>
+            <p class="card-desc">Upload a clear photo of your marksheet. Our AI will extract your marks automatically.</p>
+            <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data" id="upload-form">
+                <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" style="cursor: pointer;">
+                    <div class="drop-icon">📁</div>
+                    <p class="drop-text">Drag & drop your marksheet here</p>
+                    <p class="drop-sub">or click to browse</p>
+                    <input type="file" name="marksheet" id="file-input" accept=".jpg,.jpeg,.png" hidden>
+                </div>
+                <div class="file-preview" id="file-preview" style="display:none">
+                    <img id="preview-img" alt="Preview">
+                    <p id="preview-name"></p>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="clearFile()">Remove</button>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full" id="upload-btn" disabled>
+                    <span class="btn-text">Analyze Marksheet</span>
+                    <span class="btn-loader" style="display:none"></span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══════ MANUAL ENTRY SECTION ═══════ -->
+    <div class="input-section" id="section-manual" style="display:none">
+        <div class="glass-card manual-card">
+            <h2>Enter Marks Manually</h2>
+            <form action="{{ url_for('analyze') }}" method="POST" id="manual-form">
+                <div class="form-group">
+                    <label for="user_name">Full Name</label>
+                    <input type="text" name="user_name" id="user_name" class="form-input" placeholder="Enter your full name" required>
+                </div>
+                <div class="form-group">
+                    <label for="goal">Select Level</label>
+                    <select name="goal" id="goal" class="form-select" onchange="updateLevel()">
+                        <option value="10th">10th (SSC)</option>
+                        <option value="12th">12th (HSC)</option>
+                    </select>
+                </div>
+
+                <div id="marks-10th">
+                    <h3 class="section-title">10th Marks</h3>
+                    <div class="marks-grid">
+                        <div class="form-group"><label>Mathematics</label><input type="number" name="mark_Mathematics" class="form-input" min="0" max="100" value="0"></div>
+                        <div class="form-group"><label>Science</label><input type="number" name="mark_Science" class="form-input" min="0" max="100" value="0"></div>
+                        <div class="form-group"><label>English</label><input type="number" name="mark_English" class="form-input" min="0" max="100" value="0"></div>
+                        <div class="form-group"><label>Social Science</label><input type="number" name="mark_Social Science" class="form-input" min="0" max="100" value="0"></div>
+                        <div class="form-group"><label>Gujarati</label><input type="number" name="mark_Gujarati" class="form-input" min="0" max="100" value="0"></div>
+                        <div class="form-group"><label>Sanskrit</label><input type="number" name="mark_Sanskrit" class="form-input" min="0" max="100" value="0"></div>
+                    </div>
+                </div>
+
+                <div id="marks-12th" style="display:none">
+                    <div class="form-group">
+                        <label for="stream">Select Stream</label>
+                        <select name="stream" id="stream" class="form-select" onchange="updateStream()">
+                            <option value="Science">Science</option>
+                            <option value="Commerce">Commerce</option>
+                        </select>
+                    </div>
+
+                    <!-- Science Group Selection -->
+                    <div id="science-group-div" class="form-group">
+                        <label for="group">Select Group</label>
+                        <select name="group" id="group" class="form-select" onchange="updateGroup()">
+                            <option value="A Group (Maths)">A Group (Maths)</option>
+                            <option value="B Group (Biology)">B Group (Biology)</option>
+                        </select>
+                    </div>
+
+                    <!-- Science A Group Marks -->
+                    <div id="marks-science-a">
+                        <h3 class="section-title">12th Science (A Group) Marks</h3>
+                        <div class="marks-grid">
+                            <div class="form-group"><label>English</label><input type="number" name="mark_English" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Physics</label><input type="number" name="mark_Physics" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Physics Practical</label><input type="number" name="mark_Physics Practical" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Chemistry</label><input type="number" name="mark_Chemistry" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Chemistry Practical</label><input type="number" name="mark_Chemistry Practical" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Mathematics</label><input type="number" name="mark_Mathematics" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Computer</label><input type="number" name="mark_Computer" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Computer Practical</label><input type="number" name="mark_Computer Practical" class="form-input" min="0" max="100" value="0"></div>
+                        </div>
+                    </div>
+
+                    <!-- Science B Group Marks -->
+                    <div id="marks-science-b" style="display:none">
+                        <h3 class="section-title">12th Science (B Group) Marks</h3>
+                        <div class="marks-grid">
+                            <div class="form-group"><label>English</label><input type="number" name="mark_English" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Physics</label><input type="number" name="mark_Physics" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Physics Practical</label><input type="number" name="mark_Physics Practical" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Chemistry</label><input type="number" name="mark_Chemistry" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Chemistry Practical</label><input type="number" name="mark_Chemistry Practical" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Biology</label><input type="number" name="mark_Biology" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Biology Practical</label><input type="number" name="mark_Biology Practical" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Computer</label><input type="number" name="mark_Computer" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Computer Practical</label><input type="number" name="mark_Computer Practical" class="form-input" min="0" max="100" value="0"></div>
+                        </div>
+                    </div>
+
+                    <!-- Commerce Marks -->
+                    <div id="marks-commerce" style="display:none">
+                        <h3 class="section-title">12th Commerce Marks</h3>
+                        <div class="marks-grid">
+                            <div class="form-group"><label>Element of Acc</label><input type="number" name="mark_Element of Acc" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Economics</label><input type="number" name="mark_Economics" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Statistics</label><input type="number" name="mark_Statistics" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Org. of Comm</label><input type="number" name="mark_Org. of Comm" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>English</label><input type="number" name="mark_English" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Gujarati</label><input type="number" name="mark_Gujarati" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Computer</label><input type="number" name="mark_Computer" class="form-input" min="0" max="100" value="0"></div>
+                            <div class="form-group"><label>Computer Practical</label><input type="number" name="mark_Computer Practical" class="form-input" min="0" max="100" value="0"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">
+                    <span class="btn-text">Analyze Marks</span>
+                    <span class="btn-loader" style="display:none"></span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function switchMethod(method) {
+        document.getElementById('section-upload').style.display = method === 'upload' ? 'block' : 'none';
+        document.getElementById('section-manual').style.display = method === 'manual' ? 'block' : 'none';
+        document.getElementById('btn-upload').classList.toggle('active', method === 'upload');
+        document.getElementById('btn-manual').classList.toggle('active', method === 'manual');
+    }
+
+    function updateLevel() {
+        const goal = document.getElementById('goal').value;
+        document.getElementById('marks-10th').style.display = goal === '10th' ? 'block' : 'none';
+        document.getElementById('marks-12th').style.display = goal === '12th' ? 'block' : 'none';
+        if (goal === '12th') updateStream();
+    }
+
+    function updateStream() {
+        const stream = document.getElementById('stream').value;
+        const scienceGroup = document.getElementById('science-group-div');
+        const scienceA = document.getElementById('marks-science-a');
+        const scienceB = document.getElementById('marks-science-b');
+        const commerce = document.getElementById('marks-commerce');
+
+        if (stream === 'Science') {
+            scienceGroup.style.display = 'block';
+            updateGroup();
+            commerce.style.display = 'none';
+        } else {
+            scienceGroup.style.display = 'none';
+            scienceA.style.display = 'none';
+            scienceB.style.display = 'none';
+            commerce.style.display = 'block';
+        }
+    }
+
+    function updateGroup() {
+        const group = document.getElementById('group').value;
+        const scienceA = document.getElementById('marks-science-a');
+        const scienceB = document.getElementById('marks-science-b');
+
+        if (group === 'A Group (Maths)') {
+            scienceA.style.display = 'block';
+            scienceB.style.display = 'none';
+        } else {
+            scienceA.style.display = 'none';
+            scienceB.style.display = 'block';
+        }
+    }
+
+    // File Preview logic
+    const fileInput = document.getElementById('file-input');
+    const uploadBtn = document.getElementById('upload-btn');
+    if (fileInput) {
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) {
+                const file = fileInput.files[0];
+                document.getElementById('preview-name').textContent = file.name;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('preview-img').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+
+                document.getElementById('file-preview').style.display = 'flex';
+                document.getElementById('drop-zone').style.display = 'none';
+                uploadBtn.disabled = false;
+            }
+        });
+    }
+
+    function clearFile() {
+        fileInput.value = '';
+        document.getElementById('file-preview').style.display = 'none';
+        document.getElementById('drop-zone').style.display = 'block';
+        uploadBtn.disabled = true;
+    }
+
+    // Handle Loading States
+    document.getElementById('upload-form').addEventListener('submit', function() {
+        const btn = document.getElementById('upload-btn');
+        btn.classList.add('btn-loading');
+        btn.querySelector('.btn-text').textContent = 'Analyzing...';
+    });
+
+    document.getElementById('manual-form').addEventListener('submit', function() {
+        const btn = this.querySelector('button[type="submit"]');
+        btn.classList.add('btn-loading');
+        const text = btn.querySelector('.btn-text');
+        if (text) text.textContent = 'Analyzing...';
+    });
+</script>
+{% endblock %}

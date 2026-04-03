@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Settings | CareerVerse{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <div class="page-header">
+        <h1 class="page-title glow-text">System Settings</h1>
+        <p class="page-subtitle">Customize your CareerVerse experience</p>
+    </div>
+
+    <form action="{{ url_for('save_settings') }}" method="POST" class="settings-form">
+        <div class="settings-grid">
+            <!-- AI Behaviour -->
+            <div class="glass-card settings-card">
+                <h3 class="settings-card-title">🧠 AI Behaviour</h3>
+                <div class="form-group">
+                    <label for="ai_style">Response Style</label>
+                    <select name="ai_style" id="ai_style" class="form-select">
+                        {% for style in ["Short", "Standard", "Detailed", "Advanced"] %}
+                        <option value="{{ style }}" {% if settings.ai_style == style %}selected{% endif %}>{{ style }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- OCR Processing -->
+            <div class="glass-card settings-card">
+                <h3 class="settings-card-title">📄 OCR Processing</h3>
+                <div class="form-group">
+                    <label for="ocr_mode">OCR Mode</label>
+                    <select name="ocr_mode" id="ocr_mode" class="form-select">
+                        {% for mode in ["Fast", "Balanced", "Accurate"] %}
+                        <option value="{{ mode }}" {% if settings.ocr_mode == mode %}selected{% endif %}>{{ mode }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Chat Settings -->
+            <div class="glass-card settings-card">
+                <h3 class="settings-card-title">💬 Chat Settings</h3>
+                <div class="form-group">
+                    <label class="toggle-label">
+                        <input type="checkbox" name="chat_enabled" class="toggle-input" {% if settings.chat_enabled %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                        Enable Chat History
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="toggle-label">
+                        <input type="checkbox" name="voice_enabled" class="toggle-input" {% if settings.voice_enabled %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                        Enable Voice Response
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label for="voice_type">Voice Type</label>
+                    <select name="voice_type" id="voice_type" class="form-select">
+                        {% for voice in ["alloy", "nova", "echo", "shimmer", "verse"] %}
+                        <option value="{{ voice }}" {% if settings.voice_type == voice %}selected{% endif %}>{{ voice|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Output Appearance -->
+            <div class="glass-card settings-card">
+                <h3 class="settings-card-title">🎨 Output Appearance</h3>
+                <div class="form-group">
+                    <label for="response_font_size">AI Response Font Size: <span id="font-size-val">{{ settings.response_font_size }}px</span></label>
+                    <input type="range" name="response_font_size" id="response_font_size" class="form-range" min="14" max="28" value="{{ settings.response_font_size }}" oninput="document.getElementById('font-size-val').textContent=this.value+'px'">
+                </div>
+            </div>
+
+            <!-- Language -->
+            <div class="glass-card settings-card">
+                <h3 class="settings-card-title">🌐 System Language</h3>
+                <div class="form-group">
+                    <label for="language">Language</label>
+                    <select name="language" id="language" class="form-select">
+                        {% for lang in ["English", "Hindi", "Gujarati"] %}
+                        <option value="{{ lang }}" {% if settings.language == lang %}selected{% endif %}>{{ lang }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Data Control -->
+            <div class="glass-card settings-card">
+                <h3 class="settings-card-title">🗑️ Data Control</h3>
+                <div class="data-control-btns">
+                    <a href="#" class="btn btn-outline" onclick="event.preventDefault(); if(confirm('Clear chat history?')) document.getElementById('clear-chat-form').submit();">Clear Chat History</a>
+                    <a href="#" class="btn btn-danger" onclick="event.preventDefault(); if(confirm('Delete all stored data?')) document.getElementById('clear-data-form').submit();">Clear All Data</a>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full settings-save">Save Changes</button>
+    </form>
+
+    <!-- Hidden forms for data control -->
+    <form id="clear-chat-form" action="{{ url_for('clear_chat') }}" method="POST" style="display:none"></form>
+    <form id="clear-data-form" action="{{ url_for('clear_data') }}" method="POST" style="display:none"></form>
+</div>
+{% endblock %}

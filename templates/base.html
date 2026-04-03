@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="CareerVerse – AI-Powered Interactive Career Counselling System for students after Class 10 and 12">
+    <title>{% block title %}CareerVerse{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon_v5_final.png') }}?v=2">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.1">
+    <style>
+        .chat-ai .chat-content {
+            font-size: {{ session.get('response_font_size', 16) }}px !important;
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+
+<body class="{% block body_class %}{% endblock %}">
+    {% block nav %}
+    <nav class="navbar" id="main-nav">
+        <div class="nav-brand">
+            <img src="{{ url_for('static', filename='images/DataVidwan.jpeg') }}" alt="Data Vidwan"
+                class="nav-secondary-logo">
+            <div class="nav-divider"></div>
+            <span class="nav-title">CareerVerse</span>
+        </div>
+        <div class="nav-header-actions">
+            {% block nav_actions %}{% endblock %}
+            <button class="mobile-menu-toggle" id="mobile-toggle" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+        <div class="nav-links">
+            <a href="{{ url_for('home') }}"
+                class="nav-link {% if request.endpoint == 'home' %}active{% endif %}">Home</a>
+            <a href="{{ url_for('about') }}"
+                class="nav-link {% if request.endpoint == 'about' %}active{% endif %}">About</a>
+            <a href="{{ url_for('settings_page') }}"
+                class="nav-link {% if request.endpoint == 'settings_page' %}active{% endif %}">Settings</a>
+            {% if session.get('is_admin') %}
+            <a href="{{ url_for('admin_history') }}"
+                class="nav-link {% if request.endpoint == 'admin_history' %}active{% endif %}">Admin Control</a>
+            {% endif %}
+            {% if session.get('logged_in') %}
+            <button class="history-toggle-btn" onclick="toggleSidebar()">
+                History
+            </button>
+            <div class="user-profile-wrapper">
+                <button class="user-initial-icon" id="user-profile-toggle" onclick="toggleUserDropdown(event)">
+                    {{ session.get('user_name', 'U')[0] | upper }}
+                </button>
+                <div class="user-dropdown-content" id="user-dropdown-content">
+                    <div class="dropdown-header">
+                        <span class="dropdown-name">{{ session.get('user_name', 'User') }} {% if session.get('is_admin')
+                            %}<span class="admin-badge">Admin</span>{% endif %}</span>
+                        <span class="dropdown-email">{{ session.get('user_email', '') }}</span>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="{{ url_for('logout') }}" class="dropdown-item logout-item">
+                        <span class="item-icon">🚪</span> Logout
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+    {% endblock %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Right Sidebar (History/Chatgpt style drawer) -->
+    <aside class="app-sidebar-right" id="app-sidebar-right">
+        <div class="sidebar-header">
+            <h3>Counselling History</h3>
+            <button class="close-sidebar" onclick="toggleSidebar()">×</button>
+        </div>
+        <div class="sidebar-content">
+            <button class="new-analysis-btn" onclick="location.href='{{ url_for('new_analysis') }}';">
+                <span class="btn-icon">+</span> New Analysis
+            </button>
+            <div class="sidebar-section">
+                <h4 class="sidebar-label">Recently Analyzed</h4>
+                <div class="history-list">
+                    {% for item in user_history %}
+                    <div class="sidebar-item {% if session.get('current_perf_id') == item.id %}active{% endif %}"
+                        onclick="location.href='{{ url_for('load_history', perf_id=item.id) }}';">
+                        <span class="item-icon">💬</span>
+                        <div class="item-details">
+                            <span class="item-text">{{ item.analyzed_name or 'Career Analysis' }}</span>
+                            <span class="item-date">{{ item.created_at.strftime('%d %b, %H:%M') }}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="sidebar-empty">
+                        <p>No previous analyses found.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <footer class="footer" id="main-footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <p>&copy; 2026 <strong>CareerVerse</strong> &bull; AI-Powered Interactive Career Counselling System
+                    </p>
+                </div>
+                <div class="footer-links">
+                    <span class="footer-dev">
+                        Developed by <a href="https://surl.li/dwjaxt" target="_blank" class="footer-link"><strong>Jainam
+                                Parikh</strong></a>
+                        at <a href="https://datavidwan.com" target="_blank"
+                            class="footer-link"><strong>DataVidwan</strong></a>
+                    </span>
+                    <span class="footer-sep">|</span>
+                    <a href="mailto:jainam183222@gmail.com" class="footer-link contact-email">
+                        <span class="email-icon">📧</span> jainam183222@gmail.com
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggleMobileMenu() {
+            const navLinks = document.querySelector('.nav-links');
+            const toggle = document.getElementById('mobile-toggle');
+            navLinks.classList.toggle('mobile-active');
+            toggle.classList.toggle('active');
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const nav = document.getElementById('main-nav');
+            const navLinks = document.querySelector('.nav-links');
+            const toggle = document.getElementById('mobile-toggle');
+            if (nav && !nav.contains(e.target) && navLinks.classList.contains('mobile-active')) {
+                navLinks.classList.remove('mobile-active');
+                toggle.classList.remove('active');
+            }
+        });
+
+        // Close menu on link click
+        document.querySelectorAll('.nav-link, .history-toggle-btn').forEach(link => {
+            link.addEventListener('click', () => {
+                document.querySelector('.nav-links').classList.remove('mobile-active');
+                document.getElementById('mobile-toggle').classList.remove('active');
+            });
+        });
+
+        function toggleUserDropdown(event) {
+            event.stopPropagation();
+            document.getElementById("user-dropdown-content").classList.toggle("show");
+        }
+
+        function toggleSidebar() {
+            document.getElementById('app-sidebar-right').classList.toggle('open');
+        }
+
+        window.onclick = function (event) {
+            if (!event.target.matches('.user-initial-icon')) {
+                var dropdowns = document.getElementsByClassName("user-dropdown-content");
+                for (var i = 0; i < dropdowns.length; i++) {
+                    var openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

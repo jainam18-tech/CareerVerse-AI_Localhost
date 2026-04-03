@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify your CareerVerse Account</title>
+    <style>
+        /* Using system fonts for maximum compatibility and professionalism */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #020617;
+            margin: 0;
+            padding: 0;
+            color: #f8fafc;
+        }
+
+        .wrapper {
+            width: 100%;
+            background-color: #020617;
+            padding: 50px 0;
+        }
+
+        .container {
+            max-width: 540px;
+            margin: 0 auto;
+            background-color: #0f172a;
+            border-radius: 24px;
+            overflow: hidden;
+            border: 1px solid rgba(56, 189, 248, 0.12);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+        }
+
+        .header {
+            padding: 40px 20px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(14, 165, 233, 0.05), transparent);
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .logo-text span {
+            color: #38bdf8;
+        }
+
+        .content {
+            padding: 0 45px 50px;
+            text-align: center;
+        }
+
+        .greeting {
+            font-size: 28px;
+            color: #ffffff;
+            font-weight: 700;
+            margin-bottom: 15px;
+            letter-spacing: -0.5px;
+        }
+
+        .text {
+            color: #94a3b8;
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 35px;
+        }
+
+        .btn-box {
+            margin: 40px 0;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #2563eb, #38bdf8);
+            color: #ffffff !important;
+            padding: 18px 36px;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 16px;
+            display: inline-block;
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.25);
+            transition: transform 0.2s ease;
+        }
+
+        .features {
+            text-align: left;
+            background-color: rgba(56, 189, 248, 0.02);
+            padding: 24px 28px;
+            border-radius: 16px;
+            margin-top: 35px;
+            border: 1px solid rgba(56, 189, 248, 0.06);
+        }
+
+        .feature-item {
+            font-size: 14px;
+            color: #cbd5e1;
+            margin: 12px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-icon {
+            color: #38bdf8;
+            margin-right: 12px;
+            font-size: 16px;
+        }
+
+        .fallback-link {
+            font-size: 11px;
+            color: #475569;
+            margin-top: 40px;
+            word-break: break-all;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .fallback-link a {
+            color: #38bdf8;
+            text-decoration: none;
+        }
+
+        .footer {
+            padding: 35px 20px;
+            text-align: center;
+            color: #64748b;
+            font-size: 12px;
+            background-color: rgba(0, 0, 0, 0.15);
+            border-top: 1px solid rgba(255, 255, 255, 0.02);
+            line-height: 1.8;
+        }
+
+        .footer strong {
+            color: #cbd5e1;
+        }
+
+        .footer-brand {
+            color: #38bdf8 !important;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .footer-sep {
+            margin: 0 8px;
+            color: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header">
+                <div class="logo-text">Career<span>Verse</span></div>
+            </div>
+            <div class="content">
+                <div class="greeting">Verify your email address</div>
+                <div class="text">
+                    Hello {{ username }},<br><br>
+                    Welcome to <strong>CareerVerse</strong>. Your journey to a smarter, AI-driven professional future
+                    starts here.
+                    To unlock your personalized dashboard and insights, please verify your account.
+                </div>
+
+                <div class="btn-box">
+                    <a href="{{ verification_url }}" class="btn">Verify My Career Journey</a>
+                </div>
+
+                <div class="features">
+                    <div class="feature-item"><span class="feature-icon">▹</span>
+                        <div><strong>AI Career Mapping</strong> - Data-driven professional roadmaps.</div>
+                    </div>
+                    <div class="feature-item"><span class="feature-icon">▹</span>
+                        <div><strong>Skill Insights</strong> - Identify your core academic strengths.</div>
+                    </div>
+                    <div class="feature-item"><span class="feature-icon">▹</span>
+                        <div><strong>Market Trends</strong> - Recommendations aligned with industry growth.</div>
+                    </div>
+                </div>
+
+                <div class="fallback-link">
+                    If the button above is not working, copy and paste this link into your browser:<br>
+                    <a href="{{ verification_url }}">{{ verification_url }}</a>
+                </div>
+            </div>
+            <div class="footer">
+                &copy; 2026 <strong>CareerVerse</strong> &bull; AI-Powered Interactive Career Counselling System<br>
+                Developed by <a href="https://surl.li/dwjaxt" class="footer-brand"><strong>Jainam Parikh</strong></a>
+                at <a href="https://datavidwan.com" class="footer-brand"><strong>DataVidwan</strong></a>
+                <span class="footer-sep">|</span>
+                <a href="mailto:jainam183222@gmail.com" class="footer-brand">jainam183222@gmail.com</a>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

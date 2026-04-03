@@ -1,0 +1,111 @@
+{
+  "10th Standard": [
+    {
+      "path": "Science (PCM/PCB)",
+      "min_avg": 70,
+      "strong_subjects": ["Science", "Mathematics"],
+      "description": "Ideal for students interested in engineering, medicine, or pure sciences.",
+      "future_scope": "High. Leads to competitive fields with strong growth potential."
+    },
+    {
+      "path": "Commerce",
+      "min_avg": 55,
+      "strong_subjects": ["Social Science", "Mathematics"],
+      "description": "Focuses on business, finance, accounting, and trade.",
+      "future_scope": "Excellent. Opportunities in CA, management, and entrepreneurship."
+    },
+    {
+      "path": "Diploma (Polytechnic)",
+      "min_avg": 60,
+      "strong_subjects": ["Science", "Mathematics"],
+      "description": "Practical technical education in engineering branches (Mechanical, Civil, IT, etc.).",
+      "future_scope": "Good for early entry into technical jobs or lateral entry to B.E/B.Tech."
+    },
+    {
+      "path": "Arts/Humanities",
+      "min_avg": 40,
+      "strong_subjects": ["Social Science", "English"],
+      "description": "Covers literature, history, psychology, and social sciences.",
+      "future_scope": "Steadily growing in fields like journalism, Law, and civil services."
+    }
+  ],
+  "12th Science A Group (Maths)": [
+    {
+      "path": "Computer Engineering / IT",
+      "min_maths": 75,
+      "description": "Leading field focusing on software, AI, and cybersecurity.",
+      "future_scope": "Explosive. Highest demand and salary trends globally."
+    },
+    {
+      "path": "Mechanical/Civil/Electrical Engineering",
+      "min_maths": 60,
+      "description": "Core engineering branches dealing with machines, infrastructure, and power.",
+      "future_scope": "Stable with steady growth in industrial and public sectors."
+    },
+    {
+      "path": "B.Sc (Mathematics/Physics)",
+      "min_avg": 65,
+      "description": "Focuses on research and advanced theoretical knowledge.",
+      "future_scope": "Good for academic careers and specialized research roles."
+    },
+    {
+      "path": "Architecture (B.Arch)",
+      "min_maths": 65,
+      "description": "Blend of technology and creative design for buildings.",
+      "future_scope": "High demand in urban development and construction."
+    }
+  ],
+  "12th Science B Group (Biology)": [
+    {
+      "path": "MBBS / BDS",
+      "min_bio": 80,
+      "description": "Core medical paths for becoming a Doctor or Surgeon.",
+      "future_scope": "Prestigious with high demand and societal impact."
+    },
+    {
+      "path": "Nursing / Physiotherapy",
+      "min_bio": 60,
+      "description": "Healthcare support and rehabilitation services.",
+      "future_scope": "Very high demand in domestic and international healthcare."
+    },
+    {
+      "path": "B.Pharm / Pharmacy",
+      "min_bio": 65,
+      "description": "Studies medicine production and pharmaceutical sciences.",
+      "future_scope": "Strong growth in the pharmaceutical and research industry."
+    },
+    {
+      "path": "Biotechnology / Micro-biology",
+      "min_bio": 75,
+      "description": "Applying biology to technology and research.",
+      "future_scope": "Emerging field with huge potential in R&D."
+    }
+  ],
+  "12th Commerce": [
+    {
+      "path": "Chartered Accountancy (CA)",
+      "min_avg": 70,
+      "strong_subjects": ["Account", "Statistics"],
+      "description": "Professional course in audit, tax, and finance.",
+      "future_scope": "Elite career with very high earning potential."
+    },
+    {
+      "path": "BBA / MBA",
+      "min_avg": 60,
+      "description": "Management and business administration studies.",
+      "future_scope": "Versatile with high growth in corporate leadership."
+    },
+    {
+      "path": "CS (Company Secretary)",
+      "min_avg": 65,
+      "description": "Focuses on legal and regulatory aspects of business.",
+      "future_scope": "Critical role in corporate governance."
+    },
+    {
+      "path": "Hotel Management / Aviation",
+      "min_avg": 55,
+      "description": "Creative and people-centric service industry roles.",
+      "future_scope": "Dynamic field with international opportunities."
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Login | CareerVerse{% endblock %}
+{% block body_class %}login-page{% endblock %}
+
+{% block nav %}
+<div class="auth-top-actions">
+    <a href="{{ url_for('signup') }}" class="top-nav-btn">Sign Up</a>
+    <button class="top-help-btn" onclick="toggleHelp()">?</button>
+</div>
+
+<!-- Help Panel -->
+<div class="help-panel" id="help-panel">
+    <div class="help-header">
+        <h3>🔷 CareerVerse Help Center</h3>
+        <button class="help-close" onclick="toggleHelp()">✕</button>
+    </div>
+    <div class="help-body">
+        <h4>Login Help</h4>
+        <p>Access your CareerVerse account to view saved results and manage your profile.</p>
+        <h4>Mock Auth</h4>
+        <p>Current version uses mock authentication. You can enter any name and password to continue.</p>
+        <h4>Support</h4>
+        <div class="support-item">
+            <a href="mailto:jainam183222@gmail.com?subject=CareerVerse%20Support%20Request" class="support-email" title="Click to send an email">jainam183222@gmail.com</a>
+            <button class="copy-btn" onclick="copySupportEmail(this)" title="Copy email address">
+                📋 Copy
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block content %}
+<div class="auth-page-wrapper">
+    <div class="auth-hero-section">
+        <div class="auth-hero-content">
+            <h1 class="auth-hero-title glow-text">Welcome<br><span class="brand-text-welcome" style="opacity: 1; animation: none;">Back</span></h1>
+            <p class="auth-hero-subtitle">Your personalized path to a brilliant future continues here. Sign in to access your AI-powered career roadmap.</p>
+        </div>
+    </div>
+    
+    <div class="auth-form-section">
+        <div class="auth-card-unique">
+            <div class="auth-header-unique">
+                <h2 class="glow-text">Sign In</h2>
+                <p class="card-desc">Enter your credentials to proceed</p>
+                {% if error %}
+                <p class="error-text" style="color: #ef4444; font-size: 14px; margin-top: 10px; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.2);">{{ error }}</p>
+                {% endif %}
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <p class="flash-text" style="color: {% if category == 'success' %}#10b981{% elif category == 'danger' %}#ef4444{% else %}#3b82f6{% endif %}; font-size: 14px; margin-top: 10px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">{{ message }}</p>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+            </div>
+            
+            <form action="{{ url_for('login') }}" method="POST" class="auth-form-unique" autocomplete="off">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <div class="input-wrapper-unique">
+                        <input type="email" id="email" name="email" class="form-input" required autocomplete="off">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper-unique">
+                        <input type="password" id="password" name="password" class="form-input" required autocomplete="new-password">
+                    </div>
+                </div>
+                <button type="submit" class="auth-submit-btn" style="width: 100%; margin-top: 10px;">
+                    Enter CareerVerse
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                New here? <a href="{{ url_for('signup') }}">Create Account</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleHelp() {
+        const panel = document.getElementById('help-panel');
+        panel.classList.toggle('open');
+    }
+
+    function copySupportEmail(btn) {
+        const email = "jainam183222@gmail.com";
+        navigator.clipboard.writeText(email).then(() => {
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = "✅ Copied";
+            
+            // Remove existing toast if any
+            const existingToast = document.getElementById('copy-toast');
+            if (existingToast) existingToast.remove();
+            
+            // Create new toast
+            const toast = document.createElement('div');
+            toast.id = 'copy-toast';
+            toast.className = 'copy-toast';
+            toast.textContent = 'Email copied to clipboard!';
+            document.body.appendChild(toast);
+            
+            // Show toast
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Hide and cleanup
+            setTimeout(() => {
+                btn.innerHTML = originalContent;
+                toast.classList.remove('show');
+                // Remove from DOM after transition
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+    }
+</script>
+{% endblock %}
+

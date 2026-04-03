@@ -1,0 +1,616 @@
+{% extends "base.html" %}
+{% block title %}Results | CareerVerse{% endblock %}
+{% block body_class %}results-page{% endblock %}
+
+{% block nav_actions %}
+    <button class="perf-toggle-btn" id="perf-toggle" onclick="togglePerfSidebar()">
+        <span class="toggle-text">Marks</span>
+    </button>
+{% endblock %}
+
+{% block content %}
+<div class="results-layout-new">
+    <!-- LEFT SIDEBAR -->
+    <aside class="results-sidebar" id="results-sidebar">
+        <button class="sidebar-close-btn" onclick="togglePerfSidebar()">×</button>
+        <div class="sidebar-perf-title">{{ performance }}</div>
+
+        <div class="sidebar-marks-list">
+            {% for subject, mark in marks.items() %}
+            <div class="sidebar-mark-item">
+                <span class="subject-name">{{ subject }}</span>
+                <span class="subject-score">{{ mark }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        <form action="{{ url_for('reset') }}" method="POST" style="margin-top: auto;">
+            <button type="submit" class="btn btn-outline btn-full reset-btn">Reset</button>
+        </form>
+    </aside>
+
+    <!-- ═══════ MAIN CONTENT ═══════ -->
+    <section class="results-main">
+        <!-- Static Header (Avatar & Greeting) -->
+        <div class="chat-hero-header">
+            <div class="avatar-container">
+                <div id="avatar-3d-container"></div>
+            </div>
+            <h2 class="greeting-text">{{ greeting }}</h2>
+        </div>
+
+        <!-- Chat Viewport (Scrollable Area) -->
+        <div class="chat-history-viewport">
+            <div class="chat-history" id="chat-history">
+                {% for message in chat_history %}
+                <div class="chat-bubble {% if message.role == 'user' %}chat-user{% else %}chat-ai{% endif %}">
+                    <div class="chat-label">{% if message.role == 'user' %}You{% else %}AI Counsellor{% endif %}</div>
+                    <div class="chat-content">{{ message.content }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Chat Input (Fixed at Bottom of section) -->
+        <div class="chat-input-area">
+            <div class="chat-input-wrapper">
+                <input type="text" id="chat-input" class="form-input chat-input" placeholder="Ask your career question..." autocomplete="off">
+                <button class="btn btn-primary chat-send-btn" id="send-btn" onclick="sendChat()">
+                    <span id="send-text">Ask AI</span>
+                    <span id="send-loader" class="btn-loader" style="display:none"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Welcome Audio -->
+        {% if welcome_audio %}
+        <audio autoplay id="welcome-audio">
+            <source src="data:audio/mp3;base64,{{ welcome_audio }}" type="audio/mp3">
+        </audio>
+        {% endif %}
+
+        <!-- Audio Player for TTS -->
+        <audio id="tts-audio" style="display:none"></audio>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <!-- Premium 3D Avatar with Hand Gestures & Accurate Lip-Sync -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        const container = document.getElementById('avatar-3d-container');
+        let scene, camera, renderer, avatar;
+        let morphMeshes = [];
+        let audioCtx, analyser, dataArray;
+        let smoothLip = 0, smoothVol = 0;
+        let blinking = false;
+        let isSpeaking = false;
+        let idleSmileVal = 0;
+        let smileTimer = 0;
+        let browVal = 0;
+        
+        // ── Natural Blinking Engine ──
+        let blinkPhase = 0; // 0 = open, 1 = closed
+        let blinkTarget = 0;
+        let nextBlinkTime = Date.now() + 2000;
+        let isDoubleBlinking = false;
+        // ── Syllabic Vowel Latch State ──
+        let vowelLatchTimer = 0;
+        let activeVowel = 'none'; // 'aa', 'O', 'I', 'E', 'U', 'SS'
+        let lastTimestamp = Date.now();
+        let headTiltTarget = { x: 0, z: 0 };
+        let headTiltTimer = 0;
+
+        // ── Advanced 5-Band Phonetic Analysis ──
+        function getSpeechBands() {
+            if (!analyser || !dataArray) return { subLow:0, lowMid:0, hiMid:0, hi:0, vHigh:0 };
+            analyser.getByteFrequencyData(dataArray);
+            const binHz = audioCtx.sampleRate / analyser.fftSize;
+            
+            const getRange = (fStart, fEnd) => {
+                const low = Math.floor(fStart / binHz);
+                const hi  = Math.ceil(fEnd / binHz);
+                let sum = 0, n = 0;
+                for (let i = low; i <= Math.min(hi, dataArray.length - 1); i++) { sum += dataArray[i]; n++; }
+                return n > 0 ? (sum / n) : 0;
+            };
+
+            const rawSubLow = getRange(100, 350);   // "O", "U"
+            const rawLowMid = getRange(350, 900);   // "A", "AH"
+            const rawHiMid  = getRange(900, 2200);  // Horizontal Stretch "AE"
+            const rawHi     = getRange(2200, 4500); // "E", "I"
+            const rawVHigh  = getRange(4500, 9000); // "SS", "TH", "CH"
+
+            return {
+                subLow: Math.min(1.0, (rawSubLow / 55) * 1.6),
+                lowMid: Math.min(1.0, (rawLowMid / 65) * 1.7),
+                hiMid:  Math.min(1.0, (rawHiMid  / 45) * 1.5),
+                hi:     Math.min(1.0, (rawHi     / 35) * 1.4),
+                vHigh:  Math.min(1.0, (rawVHigh  / 25) * 1.3)
+            };
+        }
+
+        // ── Morph helpers ──
+        function getMorph(name) {
+            for (const mesh of morphMeshes) {
+                const idx = mesh.morphTargetDictionary?.[name];
+                if (idx !== undefined) return { mesh, idx };
+            }
+            return null;
+        }
+        function setMorph(name, value) {
+            const m = getMorph(name);
+            if (m) m.mesh.morphTargetInfluences[m.idx] = Math.max(0, Math.min(1, value));
+        }
+
+        // ── Animation loop ──
+        let smoothSL = 0, smoothLM = 0, smoothHM = 0, smoothH = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            const now = Date.now();
+            const dt = now - lastTimestamp;
+            lastTimestamp = now;
+
+            const bands = getSpeechBands();
+            isSpeaking = bands.hiMid > 0.03 || bands.lowMid > 0.04;
+            
+            // Smoothing for overall intensity
+            smoothSL = smoothSL * 0.45 + bands.subLow * 0.55;
+            smoothLM = smoothLM * 0.35 + bands.lowMid * 0.65;
+            smoothHM = smoothHM * 0.25 + bands.hiMid  * 0.75;
+            smoothH  = smoothH  * 0.2  + bands.hi     * 0.8;
+
+            // Syllabic Latch Engine (Determines Phonetic Shape)
+            vowelLatchTimer -= dt;
+            if (vowelLatchTimer <= 0) {
+                const maxVal = Math.max(bands.subLow, bands.lowMid, bands.hi, bands.vHigh);
+                if (maxVal < 0.05) {
+                    activeVowel = 'none';
+                } else if (bands.vHigh > 0.45 && bands.vHigh > bands.lowMid) {
+                    activeVowel = 'SS'; // Sibilants
+                } else if (bands.hi > 0.6 && bands.hiMid > 0.4) {
+                    activeVowel = 'E'; // Wider "E"
+                } else if (bands.hi > bands.lowMid && bands.hi > bands.subLow) {
+                    activeVowel = 'I';
+                } else if (bands.subLow > 0.7 && bands.subLow > bands.lowMid) {
+                    activeVowel = 'U'; // Rounded "U"
+                } else if (bands.subLow > bands.lowMid) {
+                    activeVowel = 'O';
+                } else {
+                    activeVowel = 'aa';
+                }
+                vowelLatchTimer = 110; 
+            }
+
+            const jaw = smoothLM * 0.82 + smoothHM * 0.12; 
+
+            if (avatar && renderer) {
+                // 1. Idle Expression Engine (Occasional smiles)
+                if (!isSpeaking) {
+                    const cycle = now % 6000;
+                    if (cycle < 2000) {
+                        idleSmileVal = THREE.MathUtils.lerp(idleSmileVal, 0.42, 0.03);
+                        browVal = THREE.MathUtils.lerp(browVal, 0.12, 0.03);
+                    } else {
+                        idleSmileVal = THREE.MathUtils.lerp(idleSmileVal, 0.12, 0.02);
+                        browVal = THREE.MathUtils.lerp(browVal, 0, 0.02);
+                    }
+                } else {
+                    idleSmileVal = THREE.MathUtils.lerp(idleSmileVal, 0.22, 0.1);
+                    browVal = THREE.MathUtils.lerp(browVal, 0.3, 0.1);
+                }
+
+                // 2. Realistic Blinking
+                if (now > nextBlinkTime) {
+                    blinkTarget = 1; 
+                    nextBlinkTime = now + (isDoubleBlinking ? 120 : (Math.random() * 4000 + 2000));
+                    isDoubleBlinking = !isDoubleBlinking && Math.random() < 0.15;
+                }
+                const blinkSpeed = (blinkTarget === 1) ? 0.012 * dt : 0.006 * dt;
+                blinkPhase = THREE.MathUtils.lerp(blinkPhase, blinkTarget, blinkSpeed);
+                if (blinkPhase > 0.98) blinkTarget = 0; 
+                
+                avatar.rotation.y = Math.sin(now * 0.0004) * 0.05;
+                avatar.position.y = - (new THREE.Box3().setFromObject(avatar).getCenter(new THREE.Vector3()).y) + 0.42 + (Math.sin(now * 0.001) * 0.002);
+
+                // Phonetic Morphing (Nuanced Shapes)
+                setMorph('jawOpen', jaw);
+                setMorph('mouthOpen', jaw * 0.75);
+                
+                // Advanced Viseme Application
+                setMorph('viseme_aa', activeVowel === 'aa' ? smoothLM * 0.95 : 0);
+                setMorph('viseme_O',  activeVowel === 'O'  ? smoothSL * 0.98 : 0);
+                setMorph('viseme_I',  activeVowel === 'I'  ? smoothH  * 0.92 : 0);
+                setMorph('viseme_U',  activeVowel === 'U'  ? smoothSL * 0.95 : 0);
+                setMorph('viseme_E',  activeVowel === 'E'  ? smoothH  * 0.90 : 0);
+                setMorph('viseme_SS', activeVowel === 'SS' ? smoothH  * 0.85 : 0);
+                
+                // MOUTH ROUNDING / STRETCH based on vowel
+                setMorph('mouthFunnel', (activeVowel === 'U' || activeVowel === 'O') ? 0.4 : 0);
+                setMorph('mouthPucker', activeVowel === 'U' ? 0.6 : 0);
+                setMorph('mouthStretchLeft', jaw * 0.3 + ((activeVowel === 'I' || activeVowel === 'E') ? smoothH * 0.5 : 0));
+                setMorph('mouthStretchRight', jaw * 0.3 + ((activeVowel === 'I' || activeVowel === 'E') ? smoothH * 0.5 : 0));
+
+                // MAXIMIZED Tongue Visibility Logic
+                const tongueVal = (isSpeaking && jaw > 0.15) ? 0.72 : 0;
+                setMorph('tongueOut', tongueVal); 
+                setMorph('tongueUp', tongueVal * 0.35); // Lift the tongue mesh so it's actually visible
+                
+                setMorph('eyeBlinkLeft', blinkPhase);
+                setMorph('eyeBlinkRight', blinkPhase);
+                
+                setMorph('mouthSmile', idleSmileVal);
+                setMorph('browInnerUp', browVal);
+
+                // Subtle Life-like Movement (Head Tilt)
+                headTiltTimer -= dt;
+                if (headTiltTimer <= 0) {
+                    headTiltTarget.x = (Math.random() - 0.5) * 0.08;
+                    headTiltTarget.z = (Math.random() - 0.5) * 0.05;
+                    headTiltTimer = isSpeaking ? 400 : 2000;
+                }
+                avatar.rotation.x = THREE.MathUtils.lerp(avatar.rotation.x, headTiltTarget.x, 0.1);
+                avatar.rotation.z = THREE.MathUtils.lerp(avatar.rotation.z, headTiltTarget.z, 0.1);
+                avatar.rotation.y = Math.sin(now * 0.0004) * 0.08 + (isSpeaking ? Math.sin(now * 0.01) * 0.01 : 0);
+
+                renderer.render(scene, camera);
+            }
+
+            // 6. Unified SVG Fallback Update
+            const mEl = document.getElementById('mouth-open');
+            const tEl = document.getElementById('teeth');
+            const tongueEl = document.getElementById('tongue');
+            if (mEl) {
+                const o = Math.min(jaw * 10, 8); // Smaller opening
+                const smile = idleSmileVal * 6;
+                const stretch = jaw * 8; 
+                mEl.setAttribute('ry', Math.max(1.2, o + (idleSmileVal * 2)));
+                mEl.setAttribute('rx', 13 + smile + stretch);
+                mEl.setAttribute('cy', String(154 + o * 0.25));
+                if (tEl) {
+                    tEl.setAttribute('opacity', '0'); // Permanently hidden for realism
+                    tEl.setAttribute('transform', `translate(0, ${o * 0.12})`);
+                }
+                // MAXIMIZED Tongue Visibility for SVG
+                if (tongueEl) {
+                    const tVis = (isSpeaking && jaw > 0.2) ? 0.85 : 0;
+                    tongueEl.setAttribute('opacity', String(tVis));
+                    tongueEl.setAttribute('transform', `translate(0, ${-jaw * 5}) scale(1.1)`);
+                    tongueEl.setAttribute('fill', '#d65a5a'); // Brighter pinkishly-red for visibility
+                }
+            }
+            const lEl = document.getElementById('lip-lower');
+            if (lEl) {
+                const d = Math.min(jaw * 9, 10);
+                lEl.setAttribute('d', `M122 ${155+d} Q140 ${161+d*.6} 158 ${155+d}`);
+            }
+        }
+
+        // ── Init 3D scene ──
+        function init3D() {
+            if (!container) return;
+            container.innerHTML = '<div style="color:var(--accent);font-size:13px;letter-spacing:1px;padding:10px">Loading Avatar…</div>';
+            scene  = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(15, 1, 0.01, 100);
+            const isMobile = window.innerWidth <= 768;
+            camera.position.set(0, 0, isMobile ? 0.9 : 0.45); 
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            const renderSize = isMobile ? 220 : 280;
+            renderer.setSize(renderSize, renderSize);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            
+            // Expression State
+            window.avatarState = {
+                mouthOpen: 0,
+                smile: 0,
+                brows: 0,
+                idleTimer: 0,
+                isTalking: false
+            };
+            
+            animate(); 
+            const loader = new GLTFLoader();
+            const url = 'https://models.readyplayer.me/64805e263777c8e98031a0ea.glb?morphTargets=ARKit&textureAtlas=1024&quality=high';
+            loader.load(url,
+                (gltf) => {
+                    container.innerHTML = '';
+                    container.appendChild(renderer.domElement);
+                    avatar = gltf.scene;
+                    scene.add(avatar);
+                    const box = new THREE.Box3().setFromObject(avatar);
+                    const CTR = box.getCenter(new THREE.Vector3());
+                    const isMobile = window.innerWidth <= 768;
+                    // Lowered even more to satisfy the user's "take it down" request
+                    avatar.position.set(-CTR.x, -CTR.y + (isMobile ? -0.15 : 0.42), -CTR.z); 
+                    avatar.scale.set(1.18, 0.88, 1.18); // Short and wide
+                    avatar.rotation.y = 0.1; // Gentle side profile for confidence
+                    morphMeshes = [];
+                    avatar.traverse(c => { 
+                        if (c.isMesh) {
+                            if (c.morphTargetDictionary && c.morphTargetInfluences) morphMeshes.push(c);
+                            // Set Hair and Eye Color to Professional Brown
+                            const n = c.name.toLowerCase();
+                            if (n.includes('hair')) {
+                                c.material.color.setHex(0x9a7b4f); 
+                                c.position.y += 0.02; // Lift to show eyebrows
+                            }
+                            if (n.includes('eye') || n.includes('iris')) {
+                                c.material.color.setHex(0x5d2e0a); // Realistic Brown/Hazel Iris
+                            }
+                        }
+                    });
+                    console.log('[Avatar] Morphs:', morphMeshes.length > 0 ? Object.keys(morphMeshes[0].morphTargetDictionary) : 'none');
+                },
+                undefined,
+                (err) => {
+                    console.error('[Avatar] Load error — SVG fallback', err);
+                    container.style.width  = '130px';
+                    container.style.height = '190px';
+                    container.innerHTML = `
+                      <style>
+                        @keyframes av-float  { 0%,100%{transform:translateY(0)}   50%{transform:translateY(-5px)} }
+                        @keyframes av-blink  { 0%,88%,100%{transform:scaleY(1)}  93%{transform:scaleY(0.06)} }
+                        @keyframes av-wander { 0%,100%{transform:translate(0,0)} 30%{transform:translate(0.5px,-0.2px)} 70%{transform:translate(-0.5px,0.2px)} }
+                        @keyframes av-breathe{ 0%,100%{transform:scaleX(1)}      50%{transform:scaleX(1.01)} }
+                        @keyframes av-glow   { 0%,100%{filter:drop-shadow(0 0 8px rgba(56,189,248,.35))} 50%{filter:drop-shadow(0 0 16px rgba(56,189,248,.65))} }
+                        #av-head    { animation: av-float   3.6s ease-in-out infinite; transform-origin: 140px 270px; }
+                        #av-eye-group-l { transform-origin: 116px 110px; animation: av-blink  4.2s ease-in-out infinite; }
+                        #av-eye-group-r { transform-origin: 164px 110px; animation: av-blink  4.2s ease-in-out infinite; }
+                        #av-pupil-l { transform-origin: 118px 112px; animation: av-wander 6s ease-in-out infinite; }
+                        #av-pupil-r { transform-origin: 166px 112px; animation: av-wander 6s ease-in-out infinite 3s; }
+                        #av-body    { animation: av-breathe 3.2s ease-in-out infinite; transform-origin: 140px 260px; }
+                        #avatar-svg { animation: av-glow    3s ease-in-out infinite; }
+                      </style>
+                      <svg id="avatar-svg" viewBox="50 50 180 280" width="220" height="220" style="overflow:visible;display:block;margin:0 auto">
+                        <defs>
+                          <radialGradient id="av-skin" cx="50%" cy="35%"><stop offset="0%" stop-color="#f5d1c5"/><stop offset="60%" stop-color="#e8b09a"/><stop offset="100%" stop-color="#cc8855"/></radialGradient>
+                          <radialGradient id="av-iris" cx="45%" cy="35%"><stop offset="0%" stop-color="#8b4513"/><stop offset="60%" stop-color="#5d2e0a"/><stop offset="100%" stop-color="#1a0d00"/></radialGradient>
+                          <radialGradient id="av-suit" cx="50%" cy="20%"><stop offset="0%" stop-color="#34495e"/><stop offset="70%" stop-color="#2c3e50"/><stop offset="100%" stop-color="#1a252f"/></radialGradient>
+                          <linearGradient id="av-hair" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#b08a59"/><stop offset="100%" stop-color="#9a7b4f"/></linearGradient>
+                          <filter id="av-soft"><feGaussianBlur stdDeviation="0.6"/></filter>
+                          <filter id="av-shadow"><feDropShadow dx="0" dy="2" stdDeviation="1.5" opacity="0.4"/></filter>
+                          <filter id="av-gloss"><feSpecularLighting surfaceScale="2" specularConstant="1.2" specularExponent="20" lighting-color="#ffffff"><fePointLight x="140" y="80" z="100"/></feSpecularLighting><feComposite in2="SourceGraphic" operator="in"/></filter>
+                        </defs>
+                        <!-- body/suit (Refined Professional) -->
+                        <g id="av-body">
+                          <!-- jacket body -->
+                          <path d="M82,232 Q85,285 140,295 Q195,285 198,232 Q185,190 140,180 Q95,190 82,232Z" fill="url(#av-suit)" filter="url(#av-shadow)"/>
+                          <!-- deep professional collar -->
+                          <path d="M102,180 L140,215 L178,180" fill="#0d1f4a" stroke="#0ea5e9" stroke-width="1"/>
+                          <path d="M118,180 L140,210 L162,180" fill="#1a2b45"/>
+                          <!-- shirt and silk tie -->
+                          <path d="M128,180 L140,225 L152,180" fill="white"/>
+                          <path d="M136,192 L140,230 L144,192 L140,182Z" fill="#0369a1"/> <!-- Darker silk tie -->
+                          <circle cx="140" cy="186" r="3" fill="#0ea5e9"/> <!-- Tie knot detail -->
+                        </g>
+                        <!-- floating head -->
+                        <g id="av-head">
+                          <!-- Neck Shadow -->
+                          <rect x="129" y="172" width="22" height="20" rx="5" fill="#a66a40" opacity="0.3"/>
+                          <rect x="129" y="172" width="22" height="12" rx="4" fill="#cc8855"/>
+                          
+                          <!-- Face Base (Shortened Professional Shape) -->
+                          <path id="av-face" d="M95,100 C95,150 110,185 140,185 C170,185 185,150 185,100 C185,75 165,65 140,65 C115,65 95,75 95,100" fill="url(#av-skin)" filter="url(#av-shadow)"/>
+                          <path d="M95,100 C95,150 110,185 140,185 C170,185 185,150 185,100 C185,75 165,65 140,65 C115,65 95,75 95,100" fill="white" opacity="0.04" filter="url(#av-soft)"/> 
+                          
+                          <!-- hair (Natural & Subtle - Professional) -->
+                          <path d="M88,100 Q88,55 140,48 Q192,55 192,100 L180,105 Q180,75 140,72 Q100,75 100,105 Z" fill="url(#av-hair)" opacity="0.95"/>
+                          <ellipse cx="140" cy="62" rx="46" ry="22" fill="url(#av-hair)" opacity="0.95"/>
+                          <path d="M90,75 Q85,90 88,105" stroke="url(#av-hair)" stroke-width="6" stroke-linecap="round" opacity="0.4"/>
+                          <path d="M190,75 Q195,90 192,105" stroke="url(#av-hair)" stroke-width="6" stroke-linecap="round" opacity="0.4"/>
+                          <path d="M118,56 Q140,48 162,56" stroke="#5a2800" stroke-width="3" fill="none" opacity="0.3"/>
+                          
+                          <!-- forehead highlight -->
+                          <ellipse cx="140" cy="85" rx="25" ry="12" fill="white" opacity="0.1" filter="url(#av-soft)"/>
+                          
+                          <!-- cheeks -->
+                          <ellipse cx="112" cy="138" rx="13" ry="8" fill="#e8907a" opacity="0.28" filter="url(#av-soft)"/>
+                          <ellipse cx="168" cy="138" rx="13" ry="8" fill="#e8907a" opacity="0.28" filter="url(#av-soft)"/>
+                          
+                          <!-- brows -->
+                          <path d="M106 93 Q118 87 130 93" stroke="#2a1000" stroke-width="3" fill="none" stroke-linecap="round"/>
+                          <path d="M150 93 Q162 87 174 93" stroke="#2a1000" stroke-width="3" fill="none" stroke-linecap="round"/>
+                          
+                          <!-- eyes (Realistic Almond Shape with Eyelashes) -->
+                          <g id="av-eye-group-l">
+                            <path id="av-eye-l-path" d="M102,110 Q116,98 130,110 Q116,122 102,110 Z" fill="white" filter="url(#av-shadow)"/>
+                            <circle id="av-eye-l" cx="116" cy="110" r="6.2" fill="url(#av-iris)"/>
+                            <circle id="av-pupil-l" cx="118" cy="111" r="2.8" fill="#050505" opacity="0.95"/>
+                            <circle cx="113" cy="107" r="2.2" fill="white" opacity="0.95"/>
+                          </g>
+
+                          <g id="av-eye-group-r">
+                            <path id="av-eye-r-path" d="M150,110 Q164,98 178,110 Q164,122 150,110 Z" fill="white" filter="url(#av-shadow)"/>
+                            <circle id="av-eye-r" cx="164" cy="110" r="6.2" fill="url(#av-iris)"/>
+                            <circle id="av-pupil-r" cx="166" cy="111" r="2.8" fill="#050505" opacity="0.95"/>
+                            <circle cx="161" cy="107" r="2.2" fill="white" opacity="0.95"/>
+                          </g>
+                          
+                          <!-- realistic nose -->
+                          <path d="M136,134 Q140,138 144,134" stroke="#a06030" stroke-width="1.5" fill="none" opacity="0.4"/> <!-- nostril line -->
+                          <circle cx="136" cy="135" r="1.2" fill="#7a2808" opacity="0.3"/> <!-- nostril -->
+                          <circle cx="144" cy="135" r="1.2" fill="#7a2808" opacity="0.3"/>
+                          <path d="M140,95 L140,130" stroke="#7a2808" stroke-width="1.5" opacity="0.05" filter="url(#av-soft)"/> <!-- soft bridge -->
+                          
+                          <!-- realistic mouth -->
+                          <!-- upper lip -->
+                          <path d="M122,154 Q131,150 140,154 Q149,150 158,154" stroke="#7a2808" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                          <!-- mouth line -->
+                          <path d="M120,154 Q140,165 160,154" stroke="#7a2808" stroke-width="2" fill="none" stroke-linecap="round"/>
+                          <!-- lower lip shadow -->
+                          <path d="M130,168 Q140,172 150,168" stroke="#7a2808" stroke-width="1.5" fill="none" opacity="0.2"/>
+                           <ellipse id="mouth-open" cx="140" cy="154" rx="16" ry="2" fill="#3a0e00"/>
+                           <path id="tongue" d="M130,172 Q140,166 150,172 Q140,176 130,172" fill="#aa4444" opacity="0"/>
+                           <path id="teeth" d="M128,153 Q140,152 152,153 L152,155 Q140,156 128,155 Z" fill="#ffffff" opacity="0"/>
+                          <path id="lip-lower" d="M118 150 Q140 168 162 150" stroke="#7a2808" stroke-width="3" fill="#d4946a" stroke-linecap="round"/>
+                        </g>
+                      </svg>`;
+                }
+            );
+        }
+
+        // ── Audio setup ──
+        window.setupAvatarAudio = function(audioEl, replyText) {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 1024;
+                analyser.smoothingTimeConstant = 0.5; // Fast response
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            }
+            if (!audioEl._avatarSrcNode) {
+                try {
+                    audioEl._avatarSrcNode = audioCtx.createMediaElementSource(audioEl);
+                    audioEl._avatarSrcNode.connect(analyser);
+                    analyser.connect(audioCtx.destination);
+                } catch(e) { console.warn('[Avatar] Audio:', e); }
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            setTimeout(() => {
+                if (/great|excel|good|congrat|perfect|wonder|hello|welcome|hi\b/i.test(replyText)) {
+                    setMorph('mouthSmile', 0.85); setMorph('mouthSmileLeft', 0.85); setMorph('mouthSmileRight', 0.85);
+                } else {
+                    setMorph('mouthSmile', 0.3); // Gentle default smile
+                }
+            }, 80);
+        };
+
+        document.getElementById('tts-audio')?.addEventListener('play', () => {
+            if (audioCtx?.state === 'suspended') audioCtx.resume();
+        });
+
+        window.addEventListener('load', init3D);
+    </script>
+
+
+    <script>
+        const chatInput = document.getElementById('chat-input');
+        const chatHistory = document.getElementById('chat-history');
+        const sendBtn = document.getElementById('send-btn');
+        const sendText = document.getElementById('send-text');
+        const sendLoader = document.getElementById('send-loader');
+
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendChat();
+    });
+
+    async function sendChat() {
+        const q = chatInput.value.trim();
+        if (!q) return;
+
+        const viewport = document.querySelector('.chat-history-viewport');
+
+        // Show user message immediately
+        const userBubble = document.createElement('div');
+        userBubble.className = 'chat-bubble chat-user fade-in';
+        userBubble.innerHTML = `<div class="chat-label">You</div><div class="chat-content">${escapeHtml(q)}</div>`;
+        chatHistory.appendChild(userBubble);
+        viewport.scrollTop = viewport.scrollHeight;
+
+        chatInput.value = '';
+        sendBtn.disabled = true;
+        sendText.textContent = '';
+        sendLoader.style.display = 'inline-block';
+
+        // Show typing indicator
+        const typingBubble = document.createElement('div');
+        typingBubble.className = 'chat-bubble chat-ai fade-in';
+        typingBubble.id = 'typing-indicator';
+        typingBubble.innerHTML = `<div class="chat-label">AI Counsellor</div><div class="chat-content typing-dots"><span></span><span></span><span></span></div>`;
+        chatHistory.appendChild(typingBubble);
+        viewport.scrollTop = viewport.scrollHeight;
+
+        try {
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: q })
+            });
+            const data = await res.json();
+
+            // Remove typing indicator
+            const typing = document.getElementById('typing-indicator');
+            if (typing) typing.remove();
+
+            // Add AI response
+            const aiBubble = document.createElement('div');
+            aiBubble.className = 'chat-bubble chat-ai fade-in';
+            aiBubble.innerHTML = `<div class="chat-label">AI Counsellor</div><div class="chat-content">${formatAIResponse(data.reply)}</div>`;
+            chatHistory.appendChild(aiBubble);
+
+            // Play audio and sync avatar
+            if (data.audio) {
+                const audio = document.getElementById('tts-audio');
+                if (window.setupAvatarAudio) window.setupAvatarAudio(audio, data.reply);
+                audio.src = 'data:audio/mp3;base64,' + data.audio;
+                audio.play();
+            }
+
+            // Show report download if available
+            if (data.report_url) {
+                const reportDiv = document.createElement('div');
+                reportDiv.className = 'chat-bubble chat-ai report-notif fade-in';
+                reportDiv.innerHTML = `
+                    <div class="report-card">
+                        <div class="report-icon">📄</div>
+                        <div class="report-info">
+                            <strong>Career Assessment Report</strong>
+                            <p>Your personalized PDF is ready</p>
+                        </div>
+                        <a href="${data.report_url}" class="btn btn-primary btn-sm" download>Download</a>
+                    </div>`;
+                chatHistory.appendChild(reportDiv);
+            }
+            viewport.scrollTop = viewport.scrollHeight;
+        } catch (err) {
+            const typing = document.getElementById('typing-indicator');
+            if (typing) typing.remove();
+            const errBubble = document.createElement('div');
+            errBubble.className = 'chat-bubble chat-ai fade-in';
+            errBubble.innerHTML = `<div class="chat-label">AI Counsellor</div><div class="chat-content">Sorry, something went wrong. Please try again.</div>`;
+            chatHistory.insertBefore(errBubble, userBubble.nextSibling);
+        }
+
+        sendBtn.disabled = false;
+        sendText.textContent = 'Ask AI';
+        sendLoader.style.display = 'none';
+    }
+
+    function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+    }
+
+
+    // Toggle Performance Sidebar on Mobile
+    function togglePerfSidebar() {
+        const sidebar = document.getElementById('results-sidebar');
+        const toggle = document.getElementById('perf-toggle');
+        sidebar.classList.toggle('active');
+        toggle.classList.toggle('hidden');
+    }
+
+    // Format existing history on load
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.chat-ai .chat-content').forEach(el => {
+            // Only format if it's not already processed (like the typing indicator)
+            if (!el.classList.contains('typing-dots')) {
+                const rawText = el.textContent || el.innerText;
+                el.innerHTML = formatAIResponse(rawText);
+            }
+        });
+    });
+</script>
+{% endblock %}

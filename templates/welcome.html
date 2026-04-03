@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Welcome to CareerVerse – AI-Powered Career Counselling">
+    <title>Welcome | CareerVerse</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon_v5_final.png') }}?v=2">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.1">
+</head>
+<body class="welcome-body">
+    <!-- Floating particles background -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Top bar for Help and Sign Up -->
+    <div class="auth-top-actions">
+        <a href="{{ url_for('signup') }}" class="top-nav-btn">Sign Up</a>
+        <button class="top-help-btn" onclick="toggleHelp()">?</button>
+    </div>
+
+    <div class="welcome-center">
+        <div class="welcome-text" id="welcome-line1">Welcome to,</div>
+        <div class="brand-text-welcome" id="welcome-line2">CareerVerse</div>
+        <p class="welcome-subtitle" id="welcome-sub">AI-Powered Interactive Career Counselling System</p>
+        <div class="welcome-auth-center" id="auth-btns">
+            <a href="{{ url_for('login') }}" class="btn btn-primary welcome-login-btn">Login</a>
+        </div>
+    </div>
+
+    <!-- Help Panel -->
+    <div class="help-panel" id="help-panel">
+        <div class="help-header">
+            <h3>🔷 CareerVerse Help Center</h3>
+            <button class="help-close" onclick="toggleHelp()">✕</button>
+        </div>
+        <div class="help-body">
+            <h4>About CareerVerse</h4>
+            <p>AI-powered interactive career counselling platform for students after Class 10 and 12.</p>
+            <h4>Features</h4>
+            <ul>
+                <li>OCR Marksheet Analysis</li>
+                <li>AI Career Suggestions</li>
+                <li>Voice Interaction</li>
+                <li>Multi-language Support</li>
+            </ul>
+            <h4>Support</h4>
+            <div class="support-item">
+                <a href="mailto:jainam183222@gmail.com?subject=CareerVerse%20Support%20Request" class="support-email" title="Click to send an email">jainam183222@gmail.com</a>
+                <button class="copy-btn" onclick="copySupportEmail(this)" title="Copy email address">
+                    📋 Copy
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Floating particles
+        const container = document.getElementById('particles');
+        for (let i = 0; i < 40; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.top = Math.random() * 100 + '%';
+            p.style.animationDelay = Math.random() * 6 + 's';
+            p.style.animationDuration = (4 + Math.random() * 8) + 's';
+            p.style.width = p.style.height = (2 + Math.random() * 4) + 'px';
+            container.appendChild(p);
+        }
+
+        function toggleHelp() {
+            const panel = document.getElementById('help-panel');
+            panel.classList.toggle('open');
+        }
+
+        function copySupportEmail(btn) {
+            const email = "jainam183222@gmail.com";
+            navigator.clipboard.writeText(email).then(() => {
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = "✅ Copied";
+                
+                // Remove existing toast if any
+                const existingToast = document.getElementById('copy-toast');
+                if (existingToast) existingToast.remove();
+                
+                // Create new toast
+                const toast = document.createElement('div');
+                toast.id = 'copy-toast';
+                toast.className = 'copy-toast';
+                toast.textContent = 'Email copied to clipboard!';
+                document.body.appendChild(toast);
+                
+                // Show toast
+                setTimeout(() => toast.classList.add('show'), 10);
+                
+                // Hide and cleanup
+                setTimeout(() => {
+                    btn.innerHTML = originalContent;
+                    toast.classList.remove('show');
+                    // Remove from DOM after transition
+                    setTimeout(() => toast.remove(), 400);
+                }, 3000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
