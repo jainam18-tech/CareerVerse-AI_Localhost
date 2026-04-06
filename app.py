@@ -790,6 +790,7 @@ def admin_history():
     stats = {
         "registered_users": User.query.count(),
         "verified_users": User.query.filter_by(is_verified=True).count(),
+        "unverified_users": User.query.filter_by(is_verified=False).count(),
         "total_interactions": ChatHistory.query.count(),
         "total_reports": UserPerformance.query.count()
     }
@@ -816,6 +817,30 @@ def admin_user_chats(user_id):
     } for c in chats]
     
     return jsonify({"chats": chat_list})
+
+
+@app.route("/api/admin/users/<list_type>")
+def admin_user_list(list_type):
+    if not session.get("is_admin"):
+        return jsonify({"error": "Admin access required"}), 403
+    
+    if list_type == 'verified':
+        users = User.query.filter_by(is_verified=True).order_by(User.created_at.desc()).all()
+    elif list_type == 'pending':
+        users = User.query.filter_by(is_verified=False).order_by(User.created_at.desc()).all()
+    else: # 'all' or default
+        users = User.query.order_by(User.created_at.desc()).all()
+
+    user_list = [{
+        "id": u.id,
+        "username": u.username,
+        "email": u.email,
+        "is_admin": u.is_admin,
+        "is_verified": u.is_verified,
+        "created_at": u.created_at.strftime('%Y-%m-%d %H:%M:%S')
+    } for u in users]
+    
+    return jsonify({"users": user_list})
 
 
 @app.route("/static/images/<path:filename>")
